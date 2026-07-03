@@ -1,0 +1,19 @@
+{
+  "name": "pi-list-tools",
+  "version": "1.0.0",
+  "description": "A Pi coding-agent extension that prints a canonical, verbatim list of all configured tools (builtin + extension + sdk) in table, verbose, or json form.",
+  "type": "module",
+  "license": "MIT",
+  "files": [
+    "list-tools.ts"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bash test/run.sh"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "0.80.2",
+    "@types/node": "^22",
+    "typescript": "^5.6"
+  }
+}
