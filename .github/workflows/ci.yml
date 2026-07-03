@@ -13,7 +13,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: ["20", "22"]
+        # pi requires Node >=22.19.0 (bundled undici uses APIs absent in Node 20).
+        node: ["22", "24"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

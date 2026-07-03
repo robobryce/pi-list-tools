@@ -4,6 +4,9 @@
   "description": "A Pi coding-agent extension that prints a canonical, verbatim list of all configured tools (builtin + extension + sdk) in table, verbose, or json form.",
   "type": "module",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.19.0"
+  },
   "files": [
     "list-tools.ts"
   ],
