@@ -2,17 +2,56 @@
   "name": "pi-list-tools",
   "version": "1.0.0",
   "description": "A Pi coding-agent extension that prints a canonical, verbatim list of all configured tools (builtin + extension + sdk) in table, verbose, or json form.",
+  "author": "Bryce Adelstein Lelbach",
   "type": "module",
   "license": "MIT",
   "engines": {
     "node": ">=22.19.0"
   },
   "files": [
-    "list-tools.ts"
+    "list-tools.ts",
+    "README.md"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm test",
     "test": "bash test/run.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/robobryce/pi-list-tools.git"
+  },
+  "homepage": "https://github.com/robobryce/pi-list-tools#readme",
+  "bugs": {
+    "url": "https://github.com/robobryce/pi-list-tools/issues"
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-coding-agent",
+    "tools",
+    "cli"
+  ],
+  "pi": {
+    "extensions": [
+      "./list-tools.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-agent-core": "*",
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-agent-core": {
+      "optional": true
+    },
+    "@earendil-works/pi-ai": {
+      "optional": true
+    },
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "0.80.2",

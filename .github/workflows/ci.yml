@@ -25,9 +25,8 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
 
-      # Installs pinned pi + @types/node + typescript from package.json.
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       # Put the locally-installed pi binary on PATH for the test suite.
       - name: Expose pi on PATH
@@ -42,7 +41,4 @@ jobs:
       - name: Run test suite
         run: npm test
         env:
-          # No API keys needed: the extension writes its output during the
-          # session_start event and exits before any model call. PI_OFFLINE
-          # keeps startup network work off so CI is fast and hermetic.
           PI_OFFLINE: "1"
