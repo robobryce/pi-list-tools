@@ -42,11 +42,12 @@ Inside a running session:
 
 | Mode | What it is |
 |------|-----------|
-| `table` (default) | Markdown overview table: **Tool \| Extension \| Params \| Description**. `*` marks required params. |
+| `table` (default) | Terminal-aligned overview table: **Tool**, **Extension**, **Params**, and **Description**. Cells wrap to the terminal width; `*` marks required params. |
 | `verbose` | Exhaustive Markdown grouped by extension: full description, every parameter with type/required/description, enum values, and all prompt guidelines. |
 | `json` | Exhaustive JSON: full parameter schemas, prompt guidelines, and `sourceInfo`. |
 
 The **Extension** column identifies each tool's origin: `(built-in)`, `pi-web-access (git)`, `pi-codex-goal (npm)`, etc.
+The default table is sorted by extension first, then tool name.
 
 ### `--no-extensions`
 

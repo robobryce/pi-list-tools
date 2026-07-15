@@ -6,7 +6,7 @@
  * (descriptions, per-parameter descriptions, prompt guidelines).
  *
  * Output modes (passed as an optional argument to --list-tools):
- *   table    (default) overview: Tool | Extension | Params | Description
+ *   table    (default) terminal-aligned overview: Tool, Extension, Params, Description
  *   verbose  exhaustive Markdown, no tables; every string shown to the model
  *   json     exhaustive JSON (full parameter schemas + sourceInfo)
  *
@@ -105,32 +105,114 @@ function sortTools(tools: ToolMeta[]): ToolMeta[] {
 	return [...tools].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function sortToolsByExtension(tools: ToolMeta[]): ToolMeta[] {
+	return [...tools].sort((a, b) => {
+		const byExtension = extensionLabel(a.sourceInfo).localeCompare(extensionLabel(b.sourceInfo));
+		return byExtension || a.name.localeCompare(b.name);
+	});
+}
+
 function firstLine(s: string | undefined): string {
 	const t = (s ?? "").trim();
 	if (!t) return "";
 	return t.split("\n")[0].trim();
 }
 
-function mdCell(s: string): string {
-	// Escape pipes/newlines so table rows stay intact.
-	return s.replace(/\r?\n/g, " ").replace(/\|/g, "\\|").trim();
+function plainCell(s: string): string {
+	return s.replace(/\r?\n/g, " ").replace(/\s+/g, " ").trim();
 }
 
-/** TABLE mode: overview — Tool | Extension | Params | Description (first line). */
-function renderTable(tools: ToolMeta[]): string {
-	const rows = sortTools(tools);
+function terminalWidth(): number {
+	const stdoutWidth = process.stdout.columns;
+	const envWidth = Number.parseInt(process.env.COLUMNS ?? "", 10);
+	const width = Number.isFinite(stdoutWidth) && stdoutWidth > 0 ? stdoutWidth : envWidth;
+	if (Number.isFinite(width) && width >= 60) return width;
+	return 120;
+}
+
+function wrapCell(value: string, width: number): string[] {
+	const text = plainCell(value);
+	if (!text) return [""];
 	const lines: string[] = [];
-	lines.push(`# Pi tools (${rows.length})`);
+	let line = "";
+	for (let word of text.split(/\s+/)) {
+		if (word.length > width) {
+			if (line) {
+				lines.push(line);
+				line = "";
+			}
+			while (word.length > width) {
+				lines.push(word.slice(0, width));
+				word = word.slice(width);
+			}
+		}
+		if (!word) continue;
+		if (!line) {
+			line = word;
+		} else if (line.length + 1 + word.length <= width) {
+			line += ` ${word}`;
+		} else {
+			lines.push(line);
+			line = word;
+		}
+	}
+	if (line) lines.push(line);
+	return lines.length ? lines : [""];
+}
+
+function padRight(value: string, width: number): string {
+	return value + " ".repeat(Math.max(0, width - value.length));
+}
+
+function renderTerminalRow(cells: string[], widths: number[]): string[] {
+	const wrapped = cells.map((cell, i) => wrapCell(cell, widths[i] ?? cell.length));
+	const height = Math.max(...wrapped.map((lines) => lines.length));
+	const lines: string[] = [];
+	for (let row = 0; row < height; row++) {
+		lines.push(
+			wrapped
+				.map((linesForCell, i) => padRight(linesForCell[row] ?? "", widths[i] ?? 0))
+				.join("  ")
+				.trimEnd(),
+		);
+	}
+	return lines;
+}
+
+function tableWidths(rows: Array<{ tool: string; extension: string; params: string; description: string }>): number[] {
+	const maxLen = (values: string[], fallback: string) =>
+		Math.max(fallback.length, ...values.map((value) => plainCell(value).length));
+	const tool = Math.min(maxLen(rows.map((row) => row.tool), "Tool"), 32);
+	const extension = Math.min(maxLen(rows.map((row) => row.extension), "Extension"), 28);
+	let params = Math.min(maxLen(rows.map((row) => row.params), "Params"), 42);
+	let desc = Math.max(maxLen(rows.map((row) => row.description), "Description"), 24);
+	const totalGap = 6;
+	const target = terminalWidth();
+	desc = Math.min(desc, Math.max(24, target - totalGap - tool - extension - params));
+	while (target - totalGap - tool - extension - params < 32 && params > 16) params--;
+	desc = Math.max(24, target - totalGap - tool - extension - params);
+	return [tool, extension, params, desc];
+}
+
+/** TABLE mode: terminal-aligned overview — Tool, Extension, Params, Description (first line). */
+function renderTable(tools: ToolMeta[]): string {
+	const rows = sortToolsByExtension(tools).map((t) => ({
+		tool: t.name,
+		extension: extensionLabel(t.sourceInfo),
+		params: paramNameList(t.parameters) || "-",
+		description: firstLine(t.description) || "-",
+	}));
+	const widths = tableWidths(rows);
+	const lines: string[] = [];
+	lines.push(`Pi tools (${rows.length})`);
 	lines.push("");
-	lines.push("| Tool | Extension | Params | Description |");
-	lines.push("| --- | --- | --- | --- |");
-	for (const t of rows) {
-		const params = paramNameList(t.parameters) || "—";
-		const desc = firstLine(t.description) || "—";
-		lines.push(`| \`${mdCell(t.name)}\` | ${mdCell(extensionLabel(t.sourceInfo))} | ${mdCell(params)} | ${mdCell(desc)} |`);
+	lines.push(...renderTerminalRow(["Tool", "Extension", "Params", "Description"], widths));
+	lines.push(widths.map((width) => "-".repeat(width)).join("  "));
+	for (const row of rows) {
+		lines.push(...renderTerminalRow([row.tool, row.extension, row.params, row.description], widths));
 	}
 	lines.push("");
-	lines.push("_`*` marks required parameters. Use `--list-tools verbose` or `--show-tool <name>` for full detail._");
+	lines.push("* marks required parameters. Use --list-tools verbose or --show-tool <name> for full detail.");
 	return lines.join("\n") + "\n";
 }
 

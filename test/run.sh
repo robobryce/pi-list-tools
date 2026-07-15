@@ -22,6 +22,7 @@ PI="${PI:-pi}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 EXT="$REPO_DIR/list-tools.ts"
+MIXED_EXT="$SCRIPT_DIR/fixtures/mixed-tools.ts"
 
 # Base invocation: builtin-only + our extension, deterministic everywhere.
 # We run in a temp cwd so no project-local .pi/extensions interfere.
@@ -62,13 +63,22 @@ echo
 # ---------------------------------------------------------------------------
 echo "[1] table mode (default) — pipeable on stdout"
 OUT="$(runtool --list-tools)"
-assert_contains  "table: header present"        "$OUT" "# Pi tools"
-assert_contains  "table: markdown header row"   "$OUT" "| Tool | Extension | Params | Description |"
-assert_contains  "table: builtin read row"      "$OUT" "\`read\`"
-assert_contains  "table: builtin write row"     "$OUT" "\`write\`"
+assert_contains  "table: header present"        "$OUT" "Pi tools"
+assert_contains  "table: terminal header"       "$OUT" "Tool"
+assert_contains  "table: extension header"      "$OUT" "Extension"
+assert_contains  "table: params header"         "$OUT" "Params"
+assert_contains  "table: description header"    "$OUT" "Description"
+assert_not_contains "table: not markdown"       "$OUT" "| Tool | Extension | Params | Description |"
+assert_contains  "table: builtin read row"      "$OUT" "read"
+assert_contains  "table: builtin write row"     "$OUT" "write"
 assert_contains  "table: extension col labeled" "$OUT" "(built-in)"
 # Builtin-only baseline is exactly 7 tools.
-assert_contains  "table: count is 7"            "$OUT" "# Pi tools (7)"
+assert_contains  "table: count is 7"            "$OUT" "Pi tools (7)"
+
+OUT="$( ( cd "$WORKDIR" && "$PI" --no-extensions -e "$MIXED_EXT" -e "$EXT" --list-tools 2>/dev/null ) )"
+assert_contains "table: mixed fixture count" "$OUT" "Pi tools (9)"
+NEXT_AFTER_AAA="$(printf '%s\n' "$OUT" | awk '/^aaa_fixture_tool[[:space:]]/ { getline; print; exit }')"
+assert_contains "table: sorts by extension before tool" "$NEXT_AFTER_AAA" "zzz_fixture_tool"
 
 # ---------------------------------------------------------------------------
 echo "[2] output is on STDOUT (not stderr) and survives a pipe"
@@ -77,7 +87,7 @@ CNT="$( ( cd "$WORKDIR" && "$PI" --no-extensions -e "$EXT" --list-tools 2>/dev/n
 if [ "$CNT" -ge 7 ]; then ok "stdout: >=7 builtin rows through grep pipe"; else bad "stdout: builtin rows through pipe" "got $CNT"; fi
 # stderr should NOT carry the table.
 ERR="$( ( cd "$WORKDIR" && "$PI" --no-extensions -e "$EXT" --list-tools 2>&1 >/dev/null ) )"
-assert_not_contains "stderr: does not carry the table" "$ERR" "# Pi tools"
+assert_not_contains "stderr: does not carry the table" "$ERR" "Pi tools"
 
 # ---------------------------------------------------------------------------
 echo "[3] verbose mode — exhaustive markdown"
@@ -137,16 +147,16 @@ assert_contains "show-tool: suggestion"     "$OUT" "write"
 # ---------------------------------------------------------------------------
 echo "[7] --tools-filter"
 OUT="$(runtool --list-tools --tools-filter read,write)"
-assert_contains     "filter: includes read"   "$OUT" "\`read\`"
-assert_contains     "filter: includes write"  "$OUT" "\`write\`"
-assert_not_contains "filter: excludes grep"   "$OUT" "\`grep\`"
+assert_contains     "filter: includes read"   "$OUT" "read"
+assert_contains     "filter: includes write"  "$OUT" "write"
+assert_not_contains "filter: excludes grep"   "$OUT" "grep"
 
 # ---------------------------------------------------------------------------
 echo "[8] flag-form parsing: bare defaults to table; bad mode falls back"
 OUT="$(runtool --list-tools table)"
-assert_contains "flag: explicit table"       "$OUT" "# Pi tools"
+assert_contains "flag: explicit table"       "$OUT" "Pi tools"
 OUT="$(runtool --list-tools bogusmode)"
-assert_contains "flag: bad mode -> table"    "$OUT" "| Tool | Extension | Params | Description |"
+assert_contains "flag: bad mode -> table"    "$OUT" "Tool"
 
 # ---------------------------------------------------------------------------
 echo "[9] regression: without --list-tools the extension stays silent"
@@ -154,7 +164,7 @@ echo "[9] regression: without --list-tools the extension stays silent"
 # that stdout has no table header. A normal run would try to contact a model,
 # so we cap it with a tiny timeout and only inspect stdout for our marker.)
 OUT="$( ( cd "$WORKDIR" && timeout 20 "$PI" --no-extensions -e "$EXT" -p "hi" 2>/dev/null ) || true )"
-assert_not_contains "regression: no dump without flag" "$OUT" "# Pi tools ("
+assert_not_contains "regression: no dump without flag" "$OUT" "Pi tools ("
 
 echo
 echo "== results: $PASS passed, $FAIL failed =="
