@@ -1,6 +1,6 @@
 {
   "name": "pi-list-tools",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A Pi coding-agent extension that prints a canonical, verbatim list of all configured tools (builtin + extension + sdk) in table, verbose, or json form.",
   "author": "Bryce Adelstein Lelbach",
   "type": "module",
